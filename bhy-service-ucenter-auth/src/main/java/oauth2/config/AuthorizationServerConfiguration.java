@@ -10,11 +10,19 @@ import org.springframework.security.oauth2.config.annotation.configurers.ClientD
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
+import org.springframework.security.oauth2.provider.client.JdbcClientDetailsService;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
 
+import javax.sql.DataSource;
+
 @Configuration
 public class AuthorizationServerConfiguration  extends AuthorizationServerConfigurerAdapter {
+
+    @Autowired
+    private DataSource dataSource;
+
     @Autowired
     private AuthenticationManager authenticationManager;
 
@@ -26,13 +34,18 @@ public class AuthorizationServerConfiguration  extends AuthorizationServerConfig
         return new InMemoryTokenStore();
     }
 
+    public ClientDetailsService clientDetails() {
+        return new JdbcClientDetailsService(dataSource);
+    }
+
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.inMemory()
-                .withClient("client1")
-                .authorizedGrantTypes("authorization_code","client_credentials","password","implicit","refresh_token")
-                .scopes("test")
-                .secret(PasswordEncoderFactories.createDelegatingPasswordEncoder().encode("123456"));
+        clients.jdbc(this.dataSource).clients(this.clientDetails());
+//        clients.inMemory()
+//                .withClient("client1")
+//                .authorizedGrantTypes("authorization_code","client_credentials","password","implicit","refresh_token")
+//                .scopes("test")
+//                .secret(PasswordEncoderFactories.createDelegatingPasswordEncoder().encode("123456"));
     }
 
     @Override
